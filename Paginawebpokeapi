@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Pokedex - Con Inundación Favorita</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            overflow: hidden;
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #fondo-animado {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .pokemon-rebotante {
+            position: absolute;
+            will-change: transform;
+        }
+
+        /* CONTENEDOR DE LA INTERFAZ: Arriba a la izquierda */
+        .contenedor-interfaz {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 320px;
+        }
+
+        /* Pokedex */
+        .pokedex {
+            background-color: #ef5350;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            border: 4px solid #333;
+            text-align: center;
+        }
+
+        .pantalla {
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0 0 0;
+            border: 3px solid #333;
+            min-height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .pantalla img {
+            width: 140px;
+            height: 140px;
+            image-rendering: pixelated;
+        }
+        .pantalla h2 {
+            margin: 10px 0 0 0;
+            text-transform: capitalize;
+            color: #333;
+        }
+        .buscador {
+            display: flex;
+            gap: 5px;
+        }
+        .buscador input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: 2px solid #333;
+            outline: none;
+        }
+        .buscador button, .controles button, .btn-masivo, .btn-audio {
+            padding: 8px 12px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .buscador button:hover, .controles button:hover, .btn-masivo:hover, .btn-audio:hover {
+            background-color: #555;
+        }
+
+        .controles {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            gap: 5px;
+        }
+        #btnAgregar {
+            background-color: #ffca28;
+            color: #333;
+            font-size: 1.1em;
+            flex: 1;
+            margin: 0 5px;
+        }
+        #btnAgregar:hover {
+            background-color: #ffee58;
+        }
+
+        /* CONTENEDOR DE BOTONES EXTERNOS */
+        .panel-externo {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        .btn-masivo {
+            width: 100%;
+            font-size: 0.95em;
+        }
+        #btnKanto { background-color: #9c27b0; }
+        #btnKanto:hover { background-color: #ba68c8; }
+        
+        #btnTotal { background-color: #e91e63; }
+        #btnTotal:hover { background-color: #ff4081; }
+
+        /* NUEVO: Botón de Pokémon Favorito */
+        #btnFavorito { background-color: #009688; }
+        #btnFavorito:hover { background-color: #00bfa5; }
+
+        /* Botones de audio */
+        .btn-audio {
+            font-size: 1em;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        #btnIniciarMusica { background-color: #4caf50; }
+        #btnIniciarMusica:hover { background-color: #66bb6a; }
+        
+        #btnSilenciar { background-color: #00bcd4; }
+        #btnSilenciar:hover { background-color: #00e5ff; }
+
+        #reproductores-audio {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="fondo-animado"></div>
+
+    <div id="reproductores-audio">
+        <div id="player-normal"></div>
+        <div id="player-boss"></div>
+    </div>
+
+    <div class="contenedor-interfaz">
+        
+        <!-- Pokedex -->
+        <div class="pokedex">
+            <div class="buscador">
+                <input type="text" id="pokemonInput" placeholder="Nombre o número...">
+                <button id="btnBuscar">Buscar</button>
+            </div>
+
+            <div class="pantalla">
+                <img id="pokeImg" src="" alt="Pokemon" style="display: none;">
+                <h2 id="pokeName">Cargando...</h2>
+            </div>
+
+            <div class="controles">
+                <button id="btnAnterior">◀ Ant</button>
+                <button id="btnAgregar">➕ Agregar</button>
+                <button id="btnSiguiente">Sig ▶</button>
+            </div>
+        </div>
+
+        <!-- Panel Externo de Botones (Abajo de la Pokedex) -->
+        <div class="panel-externo">
+            <button class="btn-audio" id="btnIniciarMusica">▶ Iniciar Soundtrack</button>
+            <button class="btn-audio" id="btnSilenciar" style="display: none;">🔊 Silenciar Música</button>
+            <button class="btn-masivo" id="btnFavorito">⭐ Inundación Favorita (1000)</button>
+            <button class="btn-masivo" id="btnKanto">💥 Inundación Kanto (1-150)</button>
+            <button class="btn-masivo" id="btnTotal">🌋 Inundación Total (1-1025)</button>
+        </div>
+
+    </div>
+
+    <!-- API DE YOUTUBE -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        window.pokedexAudio = {
+            playerNormal: null,
+            playerBoss: null,
+            musicaIniciada: false
+        };
+
+        function onYouTubeIframeAPIReady() {
+            window.pokedexAudio.playerNormal = new YT.Player('player-normal', {
+                videoId: 'z5RY5HoxvD0',
+                playerVars: { 'loop': 1, 'playlist': 'z5RY5HoxvD0', 'controls': 0, 'disablekb': 1 }
+            });
+
+            window.pokedexAudio.playerBoss = new YT.Player('player-boss', {
+                videoId: 'KsoxjylnQ68',
+                playerVars: { 'loop': 1, 'playlist': 'KsoxjylnQ68', 'controls': 0, 'disablekb': 1 }
+            });
+        }
+    </script>
+
+    <!-- SCRIPT DE LÓGICA Y FÍSICA -->
+    <script type="module">
+        let currentPokemonId = 1;
+        let currentPokemonImgUrl = ""; 
+        const pokemonesEnPantalla = [];
+        const TOTAL_POKEMON = 1025;
+
+        // Elementos del DOM
+        const pokeImg = document.getElementById('pokeImg');
+        const pokeName = document.getElementById('pokeName');
+        const pokemonInput = document.getElementById('pokemonInput');
+        const btnBuscar = document.getElementById('btnBuscar');
+        const btnAnterior = document.getElementById('btnAnterior');
+        const btnAgregar = document.getElementById('btnAgregar');
+        const btnSiguiente = document.getElementById('btnSiguiente');
+        const btnKanto = document.getElementById('btnKanto');
+        const btnTotal = document.getElementById('btnTotal');
+        const btnFavorito = document.getElementById('btnFavorito');
+        const btnIniciarMusica = document.getElementById('btnIniciarMusica');
+        const btnSilenciar = document.getElementById('btnSilenciar');
+        const fondoAnimado = document.getElementById('fondo-animado');
+
+        let musicaMuteada = false;
+        let modoBossActivo = false;
+
+        async function fetchPokemon(idOrName) {
+            const URL = `https://pokeapi.co/api/v2/pokemon/${idOrName.toString().toLowerCase().trim()}`;
+            try {
+                pokeName.textContent = "Buscando...";
+                pokeImg.style.display = "none";
+
+                const response = await fetch(URL);
+                if (!response.ok) throw new Error("Pokémon no encontrado");
+                const data = await response.json();
+
+                currentPokemonId = data.id;
+                pokeName.textContent = `#${data.id} - ${data.name}`;
+                currentPokemonImgUrl = data.sprites.front_default; 
+                
+                pokeImg.src = currentPokemonImgUrl;
+                pokeImg.style.display = "block";
+                pokemonInput.value = "";
+            } catch (error) {
+                pokeName.textContent = "¡No se encontró!";
+                pokeImg.style.display = "none";
+                currentPokemonImgUrl = ""; 
+            }
+        }
+
+        // --- MOTOR DE FÍSICA ---
+        const gravedad = 0.4;
+        const factorAceleracion = 1.12; 
+        const TAMANO_POKEMON = 100;
+
+        let limiteVelocidadX = 25;    
+        let limiteVelocidadY = 25;    
+
+        function spawnPokemon(imgUrl) {
+            if (!imgUrl) return;
+            const img = document.createElement('img');
+            img.src = imgUrl;
+            img.classList.add('pokemon-rebotante');
+            img.style.imageRendering = "pixelated"; 
+            img.style.width = `${TAMANO_POKEMON}px`; 
+            img.style.height = `${TAMANO_POKEMON}px`;
+            fondoAnimado.appendChild(img);
+
+            const multiplicadorVelocidad = modoBossActivo ? 15 : 6;
+
+            const objetoFisico = {
+                elemento: img,
+                ancho: TAMANO_POKEMON,
+                alto: TAMANO_POKEMON,
+                x: Math.random() * (window.innerWidth * 0.3) + 350, 
+                y: Math.random() * (window.innerHeight * 0.3) + 50,
+                vx: Math.random() * (multiplicadorVelocidad * 2) - multiplicadorVelocidad, 
+                vy: Math.random() * multiplicadorVelocidad - (multiplicadorVelocidad / 2) 
+            };
+            pokemonesEnPantalla.push(objetoFisico);
+        }
+
+        function actualizarFisica() {
+            const limiteDerecho = window.innerWidth;
+            const limiteInferior = window.innerHeight;
+
+            for (let i = 0; i < pokemonesEnPantalla.length; i++) {
+                const p = pokemonesEnPantalla[i];
+                p.vy += gravedad; 
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x + p.ancho > limiteDerecho) { 
+                    p.x = limiteDerecho - p.ancho; p.vx = -p.vx * factorAceleracion; 
+                    if (p.vx < -limiteVelocidadX) p.vx = -limiteVelocidadX; 
+                } else if (p.x < 0) { 
+                    p.x = 0; p.vx = -p.vx * factorAceleracion; 
+                    if (p.vx > limiteVelocidadX) p.vx = limiteVelocidadX; 
+                }
+
+                if (p.y + p.alto > limiteInferior) { 
+                    p.y = limiteInferior - p.alto; p.vy = -p.vy * factorAceleracion; 
+                    if (p.vy < -limiteVelocidadY) p.vy = -limiteVelocidadY; 
+                } else if (p.y < 0) { 
+                    p.y = 0; p.vy = -p.vy * factorAceleracion; 
+                    if (p.vy < limiteVelocidadY) p.vy = limiteVelocidadY; 
+                }
+
+                p.elemento.style.transform = `translate(${p.x}px, ${p.y}px)`;
+            }
+            requestAnimationFrame(actualizarFisica);
+        }
+        requestAnimationFrame(actualizarFisica);
+
+        // --- AUDIO CONTROLS ---
+        btnIniciarMusica.addEventListener('click', () => {
+            const audio = window.pokedexAudio;
+            if (audio && audio.playerNormal && typeof audio.playerNormal.playVideo === 'function') {
+                audio.playerNormal.playVideo();
+                audio.musicaIniciada = true;
+                btnIniciarMusica.style.display = "none";
+                btnSilenciar.style.display = "flex";
+            }
+        });
+
+        btnSilenciar.addEventListener('click', () => {
+            const audio = window.pokedexAudio;
+            if (!audio.playerNormal || !audio.playerBoss) return;
+            musicaMuteada = !musicaMuteada;
+            if (musicaMuteada) {
+                audio.playerNormal.mute(); audio.playerBoss.mute();
+                btnSilenciar.textContent = "🔇 Desilenciar Música";
+                btnSilenciar.style.backgroundColor = "#ff5722";
+            } else {
+                audio.playerNormal.unMute(); audio.playerBoss.unMute();
+                btnSilenciar.textContent = "🔊 Silenciar Música";
+                btnSilenciar.style.backgroundColor = "#00bcd4";
+                if (modoBossActivo) audio.playerBoss.playVideo(); else audio.playerNormal.playVideo();
+            }
+        });
+
+        // NUEVO: Función Inundación de Pokémon Favorito (1000 copias)
+        btnFavorito.addEventListener('click', () => {
+            // Validamos que haya un pokemon cargado con imagen válida
+            if (!currentPokemonImgUrl) {
+                alert("Primero busca un Pokémon válido en la Pokédex.");
+                return;
+            }
+
+            btnTotal.disabled = true;
+            btnKanto.disabled = true;
+            btnFavorito.disabled = true;
+            btnFavorito.style.opacity = "0.5";
+
+            const audio = window.pokedexAudio;
+            modoBossActivo = true;
+
+            // Velocidades supersónicas activadas
+            limiteVelocidadX = 50;
+            limiteVelocidadY = 50;
+
+            if (audio.musicaIniciada) {
+                if (audio.playerNormal && typeof audio.playerNormal.pauseVideo === 'function') audio.playerNormal.pauseVideo();
+                if (audio.playerBoss && typeof audio.playerBoss.playVideo === 'function' && !musicaMuteada) audio.playerBoss.playVideo();
+            }
+
+            let copiasGeneradas = 1;
+            const TOTAL_COPIAS_FAV = 1000;
+
+            const intervaloFavorito = setInterval(() => {
+                if (copiasGeneradas <= TOTAL_COPIAS_FAV) {
+                    spawnPokemon(currentPokemonImgUrl); // Spawnea siempre la misma imagen actual
+                    
+                    if (copiasGeneradas % 10 === 0 || copiasGeneradas === TOTAL_COPIAS_FAV) {
+                        const porcentaje = Math.round((copiasGeneradas / TOTAL_COPIAS_FAV) * 100);
+                        btnFavorito.textContent = `⭐ Clonando... (${porcentaje}%)`;
+                    }
+                    copiasGeneradas++;
+                } else {
+                    clearInterval(intervaloFavorito);
+                    btnTotal.disabled = false;
+                    btnKanto.disabled = false;
+                    btnFavorito.disabled = false;
+                    btnFavorito.style.opacity = "1";
+                    btnFavorito.textContent = "⭐ Inundación Favorita (1000)";
+
+                    // Restablecer límites de velocidad a la normalidad
+                    limiteVelocidadX = 25;
+                    limiteVelocidadY = 25;
+
+                    // Volver a la música de fondo normal
+                    modoBossActivo = false;
+                    if (audio.musicaIniciada) {
+                        if (audio.playerBoss && typeof audio.playerBoss.pauseVideo === 'function') audio.playerBoss.pauseVideo();
+                        if (audio.playerNormal && typeof audio.playerNormal.playVideo === 'function' && !musicaMuteada) audio.playerNormal.playVideo();
+                    }
+                }
+            }, 35); // Misma cadencia y tiempo cinemático de carga lenta
+        });
+
+        // Inundación Total original
+        btnTotal.addEventListener('click', () => {
+            btnTotal.disabled = true; btnKanto.disabled = true; btnFavorito.disabled = true;
+            btnTotal.style.opacity = "0.5";
+            btnTotal.textContent = "⏳ Generando el Big Bang... (0%)";
+
+            const audio = window.pokedexAudio;
+            modoBossActivo = true;
+            limiteVelocidadX = 50; limiteVelocidadY = 50;
+
+            if (audio.musicaIniciada) {
+                if (audio.playerNormal && typeof audio.playerNormal.pauseVideo === 'function') audio.playerNormal.pauseVideo();
+                if (audio.playerBoss && typeof audio.playerBoss.playVideo === 'function' && !musicaMuteada) audio.playerBoss.playVideo();
+            }
+
+            const baseUrlSprites = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
+            let idActual = 1;
+
+            const intervaloTotal = setInterval(() => {
+                if (idActual <= TOTAL_POKEMON) {
+                    const urlSprite = `${baseUrlSprites}${idActual}.png`;
+                    spawnPokemon(urlSprite);
+                    if (idActual % 10 === 0 || idActual === TOTAL_POKEMON) {
+                        const porcentaje = Math.round((idActual / TOTAL_POKEMON) * 100);
+                        btnTotal.textContent = `⏳ Inundando... (${porcentaje}%)`;
+                    }
+                    idActual++;
+                } else {
+                    clearInterval(intervaloTotal);
+                    btnTotal.disabled = false; btnKanto.disabled = false; btnFavorito.disabled = false;
+                    btnTotal.style.opacity = "1";
+                    btnTotal.textContent = "🌋 Inundación Total (1-1025)";
+
+                    limiteVelocidadX = 25; limiteVelocidadY = 25;
+                    modoBossActivo = false;
+                    if (audio.musicaIniciada) {
+                        if (audio.playerBoss && typeof audio.playerBoss.pauseVideo === 'function') audio.playerBoss.pauseVideo();
+                        if (audio.playerNormal && typeof audio.playerNormal.playVideo === 'function' && !musicaMuteada) audio.playerNormal.playVideo();
+                    }
+                }
+            }, 35); 
+        });
+
+        btnKanto.addEventListener('click', () => {
+            btnKanto.disabled = true;
+            btnKanto.style.opacity = "0.5";
+            btnKanto.textContent = "⏳ Cargando horda...";
+
+            const baseUrlSprites = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/";
+            let idActual = 1;
+            const limiteKanto = 150;
+
+            const intervaloKanto = setInterval(() => {
+                if (idActual <= limiteKanto) {
+                    const urlSprite = `${baseUrlSprites}${idActual}.png`;
+                    spawnPokemon(urlSprite);
+                    idActual++;
+                } else {
+                    clearInterval(intervaloKanto);
+                    btnKanto.disabled = false;
+                    btnKanto.style.opacity = "1";
+                    btnKanto.textContent = "💥 Inundación Kanto (1-150)";
+                }
+            }, 50);
+        });
+
+        btnAgregar.addEventListener('click', () => {
+            if (currentPokemonImgUrl) spawnPokemon(currentPokemonImgUrl);
+        });
+
+        btnBuscar.addEventListener('click', () => { const valor = pokemonInput.value; if (valor) fetchPokemon(valor); });
+        pokemonInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const valor = pokemonInput.value; if (valor) fetchPokemon(valor); } });
+        btnAnterior.addEventListener('click', () => { if (currentPokemonId > 1) fetchPokemon(currentPokemonId - 1); else fetchPokemon(TOTAL_POKEMON); });
+        btnSiguiente.addEventListener('click', () => { if (currentPokemonId < TOTAL_POKEMON) fetchPokemon(currentPokemonId + 1); else fetchPokemon(1); });
+
+        fetchPokemon(currentPokemonId);
+
+        window.addEventListener('resize', () => {
+            pokemonesEnPantalla.forEach(p => {
+                if (p.x + p.ancho > window.innerWidth) p.x = window.innerWidth - p.ancho;
+                if (p.y + p.alto > window.innerHeight) p.y = window.innerHeight - p.alto;
+            });
+        });
+    </script>
+</body>
+</html>
